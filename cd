@@ -1,0 +1,24 @@
+mport pandas as pd
+
+# Create a DataFrame with columns a, b, c, d, and e
+data = {'a': [10, 20, 30],
+        'b': [15, 25, 35],
+        'c': [8, 18, 28],
+        'd': [12, 22, 32],
+        'e': [7, 17, 27]}
+
+df = pd.DataFrame(data)
+
+# Define a custom function to apply the logic to each row
+def find_best(row):
+    if row['a'] >= max(row['b'], row['c'], row['d'], row['e']):
+        return 'a'
+    elif row['b'] > max(row['c'], row['d'], row['e']):
+        return 'b'
+    else:
+        return 'XX'
+
+# Apply the custom function to create the 'best' column
+df['best'] = df.apply(find_best, axis=1)
+
+print(df)
