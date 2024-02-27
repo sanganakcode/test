@@ -2,31 +2,36 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Assuming df is your DataFrame after reading from 'Book1.xlsx' and the first column is renamed to 'Client'
 
-# Function to format the y-axis as percentages
-def percentage_formatter(x, pos):
-    return '{:.0f}%'.format(x)
+# Set the style of the plot
+sns.set(style="white", context="talk")
 
-# Creating the plots with y-axis formatted as percentages and without grid lines
-fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(20, 10), sharex=True, sharey=True)
-fig.subplots_adjust(hspace=0.5, wspace=0.5)
+# Create subplots
+fig, axs = plt.subplots(2, 4, figsize=(20, 10), sharex='col', sharey='row')
 
-# Plotting data for each client
-for i, (client, data) in enumerate(df.groupby('Client')):
-    row = i // 4
-    col = i % 4
-    ax = axes[row, col]
-    sns.lineplot(x='Country', y='% Spend', data=data, ax=ax, marker='o')
-    ax.set_title(f'Client {client}')
-    ax.tick_params(axis='x', rotation=45)
-    ax.xaxis.grid(False)  # Disable x-axis grid lines
-    ax.yaxis.grid(False)  # Disable y-axis grid lines
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(percentage_formatter))  # Format y-axis
+# Iterate through the unique clients and plot their data
+for i, (client, group) in enumerate(df.groupby('client')):
+    ax = axs[i//4, i%4]
+    # Calculate max_y_value for the current group
+    max_y_value = group['%Spend'].max()
+    sns.lineplot(x='Country', y='%Spend', data=group, ax=ax, marker='o')
+    # Set y-axis to start at 0% and end at the max value of '%Spend' for the group
+    ax.set_ylim(0, max_y_value * 1.1)  # Adding 10% for better visibility of the line at the top
+    # Set title for each subplot
+    ax.set_title(client)
+    # Format y-axis as percentage
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y / 100)))
+    # Rotate x-axis labels for better readability
+    ax.set_xticklabels(group['Country'], rotation=45)
+    # Remove grid lines
+    ax.grid(False)
+    # Ensure country is treated as a categorical variable
+    ax.set_xlabel('Country')
+    ax.set_ylabel('% Spend')
 
-# Adjust the layout
+# Adjust the layout to prevent overlapping
 plt.tight_layout()
 
 # Save the figure
-plt.savefig('/mnt/data/clients_spend_by_country_percent_format.png')
-plt.close()  # Close the plot to prevent it from displaying in the output
+output_file = "clients_spend_by_country_custom_max.png"
+plt.savefig(output_file)
