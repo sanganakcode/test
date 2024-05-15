@@ -1,24 +1,71 @@
-mport pandas as pd
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from collections import defaultdict
 
-# Create a DataFrame with columns a, b, c, d, and e
-data = {'a': [10, 20, 30],
-        'b': [15, 25, 35],
-        'c': [8, 18, 28],
-        'd': [12, 22, 32],
-        'e': [7, 17, 27]}
+# Setting seed for reproducibility
+np.random.seed(42)
 
-df = pd.DataFrame(data)
+# Number of records
+num_records = 100000
 
-# Define a custom function to apply the logic to each row
-def find_best(row):
-    if row['a'] >= max(row['b'], row['c'], row['d'], row['e']):
-        return 'a'
-    elif row['b'] > max(row['c'], row['d'], row['e']):
-        return 'b'
-    else:
-        return 'XX'
+# Generate CustomerID
+customer_ids = np.random.randint(1000, 5000, num_records)
 
-# Apply the custom function to create the 'best' column
-df['best'] = df.apply(find_best, axis=1)
+# Generate Location (8 locations)
+locations = np.random.choice(['Location1', 'Location2', 'Location3', 'Location4', 'Location5', 'Location6', 'Location7', 'Location8'], num_records)
 
-print(df)
+# Generate Date of visit in 2023
+date_range = pd.date_range(start='2023-01-01', end='2023-12-31', freq='D')
+dates_of_visit = np.random.choice(date_range, num_records)
+
+# Generate spend amount (assuming a reasonable spend amount per visit)
+spends = np.round(np.random.uniform(10, 500, num_records), 2)
+
+# Generate age of customer (assuming age range between 18 and 70)
+ages = np.random.randint(18, 70, num_records)
+
+# Create DataFrame
+data = pd.DataFrame({
+    'CustomerID': customer_ids,
+    'Location': locations,
+    'Date_of_visit': dates_of_visit,
+    'Spend': spends,
+    'Age': ages
+})
+
+# Filter data for only four locations
+selected_locations = ['Location1', 'Location2', 'Location3', 'Location4']
+filtered_data = data[data['Location'].isin(selected_locations)]
+
+# Create a dictionary to track customer visits to the selected locations
+customer_visits_filtered = defaultdict(lambda: {loc: 0 for loc in selected_locations})
+
+for idx, row in filtered_data.iterrows():
+    customer_visits_filtered[row['CustomerID']][row['Location']] += 1
+
+# Convert the dictionary to a DataFrame suitable for UpSet plot
+upset_data_filtered = pd.DataFrame.from_dict(customer_visits_filtered, orient='index')
+upset_data_filtered = upset_data_filtered.reset_index().rename(columns={'index': 'CustomerID'})
+
+# Create a binary DataFrame for the UpSet plot
+binary_data_filtered = upset_data_filtered.drop(columns=['CustomerID']).astype(bool).astype(int)
+
+# Prepare data for UpSet plot
+location_combinations_filtered = binary_data_filtered.apply(lambda row: tuple(row.index[row == 1]), axis=1)
+combination_counts_filtered = location_combinations_filtered.value_counts()
+
+# Calculate the percentage of each combination
+total_visits = combination_counts_filtered.sum()
+combination_percentages = (combination_counts_filtered / total_visits) * 100
+
+# Plotting the UpSet-like plot using a bar plot to represent the percentages
+plt.figure(figsize=(12, 6))
+combination_percentages.plot(kind='bar')
+plt.xlabel('Location Combinations')
+plt.ylabel('Percentage of Total Visits')
+plt.title('Percentage of Location Combinations of Customer Visits to 4 Locations in 2023')
+plt.xticks(rotation=45, ha='right')
+plt.grid(False)  # Remove grid lines
+plt.tight_layout()
+plt.show()
